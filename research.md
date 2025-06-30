@@ -3,8 +3,7 @@ We identified three distinct failure modes in modern LLM agents. We show that ex
 
 We argue that these components must operate within a tightly-coupled, hierarchical control loop to be truly effective. Our contribution is the design of such a architecture, where a Planner provides high-level strategic direction, a Worker ensures reasoning robustness via CoT-SC, and an LLM Evaluator acts as the crucial link between them, monitoring progress and governing a Reflection process that continuously refines the agent's contextual understanding.
 
-
-I'm not completely sure yet, but I am thinking of benchmarking using HotPotQA, Webshopping, Alfsword, and other benchmarks that research papers used.
+I'm not completely sure yet, but I am thinking of benchmarking using HotPotQA, Webshopping, Alfsword, and other benchmarks that research papers used mentioned in the "sources" below.
 
 ## More about the LLM Evaluator
 **Role:** Defined it as a controller or dispatcher. Its primary job is to check the state of the overall sub-task progress.
