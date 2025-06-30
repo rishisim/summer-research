@@ -28,8 +28,9 @@
 ![image](https://github.com/user-attachments/assets/6f30922d-9652-43fd-81c5-5be56f86b1c2)
 
 # References
-The Github Standard Workflow:
-Use one main branch, typically called main or develop, as your single source of truth.
-When you want to add a feature (e.g., "implement the CoT-SC worker"), you create a feature branch from main (e.g., git checkout -b feature/cot-sc-worker).
-You work on that feature in its own branch. Once it's complete and tested, you merge it back into main.
-To mark the completion of a major phase, you use a Git Tag. So when Phase 1 is done, you'll tag that commit: git tag -a v1.0 -m "Phase 1: Updated ReAct complete".
+**The Github Standard Workflow:**
+
+- Use one main branch, typically called main or develop, as your single source of truth.
+- When you want to add a feature (e.g., "implement the CoT-SC worker"), you create a feature branch from main (e.g., git checkout -b feature/cot-sc-worker).
+- You work on that feature in its own branch. Once it's complete and tested, you merge it back into main.
+- To mark the completion of a major phase, you use a Git Tag. So when Phase 1 is done, you'll tag that commit: git tag -a v1.0 -m "Phase 1: Updated ReAct complete".
