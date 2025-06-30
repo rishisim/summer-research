@@ -21,7 +21,8 @@ I'm not completely sure yet, but I am thinking of benchmarking using HotPotQA, W
 The Evaluator isn't judging the correctness of a single action, but rather the momentum of the entire sub-task loop.
 
 
-Current Sources:
+# Current Sources:
+
 Tree of Thoughts: Deliberate Problem Solving with Large Language Models
 12/3/2023 · Shunyu Yao, Karthik Narasimhan, Jeffrey Zhao, et al.
 
