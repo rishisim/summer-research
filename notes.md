@@ -1,5 +1,4 @@
 
-
 # Brainstorming
 ![image](https://github.com/user-attachments/assets/6f30922d-9652-43fd-81c5-5be56f86b1c2)
 
