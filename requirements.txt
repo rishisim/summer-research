@@ -1,4 +1,0 @@
-google-generativeai
-python-dotenv
-numpy
-pandas
