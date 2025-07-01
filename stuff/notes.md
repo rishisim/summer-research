@@ -34,3 +34,6 @@
 - When you want to add a feature (e.g., "implement the CoT-SC worker"), you create a feature branch from main (e.g., git checkout -b feature/cot-sc-worker).
 - You work on that feature in its own branch. Once it's complete and tested, you merge it back into main.
 - To mark the completion of a major phase, you use a Git Tag. So when Phase 1 is done, you'll tag that commit: git tag -a v1.0 -m "Phase 1: Updated ReAct complete".
+
+## Project Creation/Development Notes
+When I created it, I first git cloned the repository with the ReAct stuff inside it (git clone [https link]) so now its in the local folder. Then I created an env, and activated the environment ```.\venv\Scripts\activate```, so that I can install dependencies within the environment.
