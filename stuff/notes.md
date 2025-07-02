@@ -139,5 +139,129 @@ After your branch has been successfully merged, it's good practice to delete it 
     git push origin --delete feature/user-authentication
     ```
 
+### **Git Workflow: Merging to an Upstream Branch and Tagging**
+
+This guide covers merging a feature branch into a long-running upstream branch (like `develop`) and then applying a version tag to mark the progress.
+
+-----
+
+#### **Step 1: Start Fresh**
+
+Always begin by syncing with the remote upstream branch you will eventually merge into.
+
+1. **Switch to your upstream branch.**
+    ```bash
+    # Substitute 'develop' with your actual branch name
+    git checkout develop
+    ```
+
+2. **Pull the latest changes.**
+    ```bash
+    git pull
+    ```
+
+-----
+
+#### **Step 2: Create Your Feature Branch**
+
+Create your new branch from the up-to-date upstream branch.
+
+1. **Create and switch to your new branch.**
+    ```bash
+    # This new branch is based on the current state of 'develop'
+    git checkout -b feature/new-module
+    ```
+
+-----
+
+#### **Step 3: Do the Work (The Add-Commit-Push Loop)**
+
+Work on your feature, committing and pushing as you go.
+
+1. **Make changes**, `git add .`, and `git commit`.
+    ```bash
+    git add .
+    git commit -m "feat: Implement new data processing module"
+    ```
+
+2. **Push your feature branch to the remote.**
+    ```bash
+    # The -u flag sets the upstream tracking link for your feature branch
+    git push -u origin feature/new-module
+    ```
+
+-----
+
+#### **Step 4: Finish and Merge Your Feature into the Upstream Branch**
+
+Once your work is complete, merge it into the target `develop` branch.
+
+1. **Update the target `develop` branch.**
+    ```bash
+    git checkout develop
+    git pull
+    ```
+
+2. **Update your feature branch.** Rebase it on top of the latest `develop`.
+    ```bash
+    git checkout feature/new-module
+    git rebase develop
+    ```
+    > If you have conflicts, resolve them, then run `git add .` and `git rebase --continue`.
+
+3. **Merge your feature branch.**
+    ```bash
+    git checkout develop
+    git merge feature/new-module
+    ```
+
+4. **Push the updated `develop` branch.**
+    ```bash
+    git push
+    ```
+
+-----
+
+#### **Step 5: Create a Version Tag**
+
+Tag the new state of the `develop` branch.
+
+1. **Ensure you're on the `develop` branch.**
+    ```bash
+    git checkout develop
+    ```
+
+2. **Create an annotated tag.**
+    ```bash
+    # Example for a pre-release version
+    git tag -a v1.1.0-alpha.1 -m "Add new data processing module"
+    ```
+
+3. **Push the new tag to the remote.**
+    ```bash
+    # Push the specific tag
+    git push origin v1.1.0-alpha.1
+
+    # Or push all local tags
+    git push --tags
+    ```
+
+-----
+
+#### **Step 6: Clean Up**
+
+Delete your now-merged feature branch.
+
+1. **Delete the local branch.**
+    ```bash
+    git branch -d feature/new-module
+    ```
+
+2. **Delete the remote branch.**
+    ```bash
+    git push origin --delete feature/new-module
+    ```
+
+
 ## Project Creation/Development Notes
 When I created it, I first git cloned the repository with the ReAct stuff inside it (git clone [https link]) so now its in the local folder. Then I created an env, and activated the environment ```.\venv\Scripts\activate```, so that I can install dependencies within the environment.
