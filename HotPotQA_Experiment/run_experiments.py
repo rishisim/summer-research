@@ -3,8 +3,8 @@ import hotpotqa_agent as hqa # Import our library
 
 # --- Main Configuration ---
 NUM_TASKS_TODAY = 10
-BASELINE_OUTPUT_FILE = 'react_baseline_results.json'
-NEW_FRAMEWORK_OUTPUT_FILE = 'react_cot_synth_results.json'
+BASELINE_OUTPUT_FILE = 'HotPotQA_Experiment/react_baseline_results.json'
+NEW_FRAMEWORK_OUTPUT_FILE = 'HotPotQA_Experiment/react_cot_synth_results.json'
 
 print("Setting up dataset indices...")
 all_indices = list(range(7405))
