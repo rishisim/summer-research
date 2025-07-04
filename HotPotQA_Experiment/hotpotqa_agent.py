@@ -128,11 +128,23 @@ def append_to_json(data_dict, json_file_path):
         json.dump(results_list, f, indent=4)
 
 # --- Webthink Agent ---
-# Load prompts - this might need adjustment based on final file structure
-# For now, assuming prompts are accessible. This will be handled in run_experiments.py
-# webthink_prompt_template = "..." # This will be loaded and passed to webthink
+# Load prompts
+prompt_file_path = 'prompts_naive.json' # Assuming it's in the same directory or accessible path
+try:
+    with open(prompt_file_path, 'r') as f:
+        prompt_dict = json.load(f)
+    webthink_examples = prompt_dict['webthink_simple6']
+    instruction = """Solve a question answering task with interleaving Thought, Action, Observation steps. Thought can reason about the current situation, and Action can be three types: \n(1) Search[entity], which searches the exact entity on Wikipedia and returns the first paragraph if it exists. If not, it will return some similar entities to search.\n(2) Lookup[keyword], which returns the next sentence containing keyword in the current passage.\n(3) Finish[answer], which returns the answer and finishes the task.\nHere are some examples.\n"""
+    WEBTHINK_PROMPT_TEMPLATE = instruction + webthink_examples
+except FileNotFoundError:
+    print(f"ERROR: Prompt file {prompt_file_path} not found. Webthink might not work correctly.")
+    WEBTHINK_PROMPT_TEMPLATE = "ERROR_PROMPT_FILE_NOT_FOUND" # Fallback
+except KeyError:
+    print(f"ERROR: Key 'webthink_simple6' not found in {prompt_file_path}. Webthink might not work correctly.")
+    WEBTHINK_PROMPT_TEMPLATE = "ERROR_PROMPT_KEY_NOT_FOUND" # Fallback
 
-def webthink(idx=None, initial_prompt_template="DEFAULT_PROMPT_SHOULD_BE_REPLACED", to_print=True, num_traces=1):
+
+def webthink(idx=None, initial_prompt_template=WEBTHINK_PROMPT_TEMPLATE, to_print=True, num_traces=1):
     all_traces_info = []
     question_for_synthesis = "" # Define outside loop to store it
 
