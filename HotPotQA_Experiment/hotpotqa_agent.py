@@ -136,7 +136,7 @@ try:
     with open(prompt_file_path, 'r') as f:
         prompt_dict = json.load(f)
     webthink_examples = prompt_dict['webthink_simple6']
-    instruction = """Solve a question answering task with interleaving Thought, Action, Observation steps. Thought can reason about the current situation, and Action can be three types: \n(1) Search[entity], which searches the exact entity on Wikipedia and returns the first paragraph if it exists. If not, it will return some similar entities to search.\n(2) Lookup[keyword], which returns the next sentence containing keyword in the current passage.\n(3) Finish[answer], which returns the answer and finishes the task.\nHere are some examples.\n"""
+    instruction = """Solve a question answering task with interleaving Thought, Action, Observation steps. Thought can reason about the current situation, and Action can be three types: \n(1) Search[entity], which searches the exact entity on Wikipedia and returns the first paragraph if it exists. If not, it will return some similar entities to search.\n(2) Lookup[keyword], which returns the next sentence containing keyword in the current passage.\n(3) Finish[answer], which returns the answer and finishes the task.\nHere are some examples.\n If the question is based on a false premise or the information needed to answer is not available, answer "null"."""
     WEBTHINK_PROMPT_TEMPLATE = instruction + webthink_examples
 except FileNotFoundError:
     print(f"ERROR: Prompt file {prompt_file_path} not found. Webthink might not work correctly.")
