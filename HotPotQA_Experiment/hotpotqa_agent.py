@@ -21,6 +21,7 @@ def step(env, action):
 
 # --- LLM and Helper Functions ---
 client = genai.Client() # Assuming API key is in env
+# client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"]) # for scripts
 
 def llm(prompt, stop=["\n"], num_traces=1):
   # This delay handles the 15 RPM limit by waiting ~4 seconds per call.
@@ -129,7 +130,8 @@ def append_to_json(data_dict, json_file_path):
 
 # --- Webthink Agent ---
 # Load prompts
-prompt_file_path = 'prompts_naive.json' # Assuming it's in the same directory or accessible path
+prompt_file_path = os.path.join(os.path.dirname(__file__), 'prompts_naive.json')
+
 try:
     with open(prompt_file_path, 'r') as f:
         prompt_dict = json.load(f)
