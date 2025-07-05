@@ -14,73 +14,26 @@ from google import genai # Ensuring this matches the notebook
 from google.genai import types # Ensuring this matches the notebook
 
 # The client gets the API key from the environment variable `GEMINI_API_KEY`.
-_client = None
-
-def get_genai_client():
-    global _client
-    if _client is None:
-        try:
-            _client = genai.Client() # As per notebook
-        except Exception as e:
-            print(f"Error initializing Google GenAI Client: {e}")
-            print("Please ensure the GEMINI_API_KEY environment variable is set correctly.")
-            # Allow execution to continue, llm calls will fail gracefully
-    return _client
+client = genai.Client() # Assuming API key is in env
+# client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"]) # for scripts
 
 def llm(prompt, stop=["\n"], num_traces=1):
-    client = get_genai_client()
-    if not client:
-        print("GenAI Client not initialized. Cannot make LLM call.")
-        return "[GENAI_CLIENT_NOT_INITIALIZED]"
+  # This delay handles the 15 RPM limit by waiting ~4 seconds per call.
+  time.sleep(4.1)
 
-    time.sleep(4.1)
-    temperature_setting = 0.0 if num_traces == 1 else 0.7
-
-    # Model name from the notebook
-    model_name_from_notebook = "gemini-2.5-flash-lite-preview-06-17"
-
-    try:
-        # Configuration as per the notebook:
-        # Using types.GenerateContentConfig for the 'config' parameter
-        # of client.models.generate_content.
-        llm_config = types.GenerateContentConfig(
-            stop_sequences=stop,
-            temperature=temperature_setting,
-            max_output_tokens=100,
-            top_p=1.0
-        )
-        # Add thinking_config if it was in the notebook's GenerateContentConfig
-        # The notebook shows: thinking_config=types.ThinkingConfig(thinking_budget=0)
-        if hasattr(types, 'ThinkingConfig'):
-            try:
-                # Try to initialize with thinking_config if it's a constructor argument
-                llm_config = types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                    stop_sequences=stop,
-                    temperature=temperature_setting,
-                    max_output_tokens=100,
-                    top_p=1.0
-                )
-            except TypeError:
-                # If not a constructor arg, try setting as an attribute if it exists
-                if hasattr(llm_config, 'thinking_config'):
-                    llm_config.thinking_config = types.ThinkingConfig(thinking_budget=0)
-                else:
-                    # If cannot be set, proceed without it but log a warning or note
-                    if to_print: # (Assuming to_print is available or passed to llm)
-                         print("Note: ThinkingConfig could not be applied as expected.")
-
-
-        # LLM call structure as per the notebook: client.models.generate_content
-        response = client.models.generate_content(
-            model=model_name_from_notebook,
-            contents=prompt,
-            config=llm_config # Pass the GenerateContentConfig instance here
-        )
-        return response.text
-    except Exception as e:
-        print(f"Error during LLM call: {e}")
-        return f"[LLM_ERROR: {e}]"
+  temperature_setting = 0.0 if num_traces == 1 else 0.7
+  response = client.models.generate_content(
+    model="gemini-2.5-flash-lite-preview-06-17",
+    contents=prompt,
+    config=types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=0), # Disables thinking
+        stop_sequences=stop,
+        temperature=temperature_setting,
+        max_output_tokens=100,
+        top_p=1.0
+    )
+  )
+  return response.text
 
 # --- Environment Setup ---
 # (This will be initialized when webthink is called, or can be global)
