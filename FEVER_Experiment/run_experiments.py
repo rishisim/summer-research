@@ -19,7 +19,7 @@ except Exception as e:
 
 # --- Main Configuration ---
 MAX_FEVER_DEV_EXAMPLES = 7405 # Based on paper_dev.jsonl line count
-NUM_TASKS_TODAY = 3 # Keep small for testing, can be increased later
+NUM_TASKS_TODAY = 10 # Keep small for testing, can be increased later
 BASELINE_OUTPUT_FILE = 'react_baseline_results.json' # Path relative to FEVER_Experiment
 NEW_FRAMEWORK_OUTPUT_FILE = 'react_multi_trace_results.json' # Path relative to FEVER_Experiment
 BASELINE_OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), BASELINE_OUTPUT_FILE)
