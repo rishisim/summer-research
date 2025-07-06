@@ -265,3 +265,5 @@ Delete your now-merged feature branch.
 
 ## Project Creation/Development Notes
 When I created it, I first git cloned the repository with the ReAct stuff inside it (git clone [https link]) so now its in the local folder. Then I created an env, and activated the environment ```.\venv\Scripts\activate```, so that I can install dependencies within the environment.
+
+Run (venv) PS C:\Users\rishi\Documents\summer-research\react-research> $env:GOOGLE_API_KEY = "API_KEY_HERE" to execute the python scripts.
