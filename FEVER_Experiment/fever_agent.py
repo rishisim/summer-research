@@ -117,28 +117,73 @@ def extract_answers_from_traces(all_traces_info):
 
     return [ans for ans in extracted_answers if ans is not None]
 
-def synthesize_answer_with_llm(list_of_answers, question_for_context=""):
-    if not list_of_answers:
-        return "NOT ENOUGH INFO"
 
-    counts = {'SUPPORTS': 0, 'REFUTES': 0, 'NOT ENOUGH INFO': 0}
-    valid_answers_found = False
-    for ans in list_of_answers:
-        if ans in counts:
-            counts[ans] += 1
-            valid_answers_found = True
+def extract_trajectories_from_traces(all_traces_info):
+    """
+    Extracts the full trajectory string from each trace in the all_traces_info list.
+    """
+    extracted_trajectories = []
+    if not isinstance(all_traces_info, list):
+        print(f"Warning: extract_trajectories_from_traces expected a list, got {type(all_traces_info)}")
+        return extracted_trajectories
 
-    if not valid_answers_found:
-        return "NOT ENOUGH INFO"
+    for i, trace_info in enumerate(all_traces_info):
+        trajectory = trace_info.get('traj', '')
+        if trajectory:
+            extracted_trajectories.append(trajectory)
+        else:
+            print(f"Warning: Missing trajectory in trace_info for FEVER trace {i}")
+            extracted_trajectories.append(f"FEVER Trace {i+1} was empty or missing.") # Placeholder
 
-    # Majority vote logic for FEVER
-    if counts['SUPPORTS'] > counts['REFUTES'] and counts['SUPPORTS'] > counts['NOT ENOUGH INFO']:
-        return 'SUPPORTS'
-    elif counts['REFUTES'] > counts['SUPPORTS'] and counts['REFUTES'] > counts['NOT ENOUGH INFO']:
-        return 'REFUTES'
-    elif counts['NOT ENOUGH INFO'] > counts['SUPPORTS'] and counts['NOT ENOUGH INFO'] > counts['REFUTES']:
-        return 'NOT ENOUGH INFO'
-    else: # Ties or ambiguous cases default to NOT ENOUGH INFO
+    return extracted_trajectories
+
+
+def synthesize_answer_with_llm(list_of_trajectories, claim_for_context=""):
+    """
+    Synthesizes a final verdict (SUPPORTS, REFUTES, NOT ENOUGH INFO) for a FEVER claim
+    based on a list of full reasoning trajectories using an LLM.
+    """
+    if not list_of_trajectories:
+        return "NOT ENOUGH INFO" # Default if no trajectories
+
+    valid_trajectories = [str(t).strip() for t in list_of_trajectories if str(t).strip()]
+    if not valid_trajectories:
+        return "NOT ENOUGH INFO" # Default if no valid trajectories
+
+    prompt_template = """As an expert fact-checker, your task is to determine the veracity of a given claim based on the following reasoning trajectories. Each trajectory represents an attempt to verify the claim.
+The claim is: "{claim_context}"
+
+Review all trajectories, analyze the reasoning steps, the information gathered, and the final conclusion of each. Based on your comprehensive analysis of all trajectories, decide if the claim is SUPPORTED, REFUTES, or if there is NOT ENOUGH INFO.
+
+Reasoning Trajectories:
+{formatted_trajectories}
+
+Based on your analysis of all the reasoning trajectories, is the claim SUPPORTED, REFUTES, or NOT ENOUGH INFO?
+Final Verdict:""" # Using "Final Verdict:" to guide the LLM for a single label
+
+    formatted_trajectories = ""
+    for i, traj in enumerate(valid_trajectories):
+        formatted_trajectories += f"--- Trajectory {i+1} ---\n{traj}\n--- End of Trajectory {i+1} ---\n\n"
+    formatted_trajectories = formatted_trajectories.strip()
+
+    synthesizer_prompt = prompt_template.format(
+        claim_context=claim_for_context,
+        formatted_trajectories=formatted_trajectories
+    )
+    # print(f"DEBUG: Synthesizer prompt for FEVER:\n{synthesizer_prompt}") # For debugging
+
+    # LLM call to get the synthesized verdict
+    # We expect one of "SUPPORTS", "REFUTES", "NOT ENOUGH INFO"
+    # Adding stop sequences might be useful if the LLM tends to be verbose.
+    llm_response = llm(synthesizer_prompt, stop=["\n"], num_traces=1)
+    final_verdict = llm_response.strip().upper()
+
+    # Validate the LLM response
+    if final_verdict in ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"]:
+        return final_verdict
+    else:
+        # If the LLM returns something unexpected, default to NOT ENOUGH INFO
+        print(f"Warning: LLM returned an unexpected verdict for FEVER: '{llm_response}'. Defaulting to NOT ENOUGH INFO.")
         return "NOT ENOUGH INFO"
 
 # --- Core Webthink Logic ---
@@ -261,17 +306,21 @@ def webthink(idx=None, initial_prompt_template=None, to_print=True, num_traces=1
         if to_print:
             print("\n--- Starting Answer Synthesis for FEVER ---")
 
-        extracted_answers = extract_answers_from_traces(all_traces_info)
+        # MODIFIED: Extract full trajectories instead of just answers/labels
+        extracted_trajectories = extract_trajectories_from_traces(all_traces_info)
 
         if to_print:
-            print(f"Extracted Answers for Synthesis: {extracted_answers}")
+            print(f"Extracted Trajectories for Synthesis: {len(extracted_trajectories)} trajectories")
+            # for i, traj in enumerate(extracted_trajectories):
+            #     print(f"Trajectory {i+1}:\n{traj[:300]}...\n") # Print start for brevity
 
-        if not extracted_answers:
+        if not extracted_trajectories:
             if to_print:
-                print("Warning: No answers extracted from traces. Defaulting to NOT ENOUGH INFO.")
+                print("Warning: No trajectories extracted. Defaulting to NOT ENOUGH INFO.")
             synthesized_answer = "NOT ENOUGH INFO"
         else:
-            synthesized_answer = synthesize_answer_with_llm(extracted_answers, question_for_synthesis)
+            # Pass the original claim (question_for_synthesis) to the new LLM-based synthesizer
+            synthesized_answer = synthesize_answer_with_llm(extracted_trajectories, question_for_synthesis)
 
         if to_print:
             print(f"Synthesized Answer: {synthesized_answer}")
