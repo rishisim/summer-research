@@ -19,7 +19,7 @@ except Exception as e:
 
 # --- Main Configuration ---
 MAX_FEVER_DEV_EXAMPLES = 7405 # Based on paper_dev.jsonl line count
-NUM_TASKS_TODAY = 9 # Keep small for testing, can be increased later
+NUM_TASKS_TODAY = 2 # Keep small for testing, can be increased later
 BASELINE_OUTPUT_FILE = 'react_baseline_results.json' # Path relative to FEVER_Experiment
 NEW_FRAMEWORK_OUTPUT_FILE = 'react_multi_trace_results.json' # Path relative to FEVER_Experiment
 BASELINE_OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), BASELINE_OUTPUT_FILE)
@@ -79,11 +79,23 @@ for i, idx in enumerate(indices_for_today):
     print("Running new framework (num_traces=3)...")
     try:
         synthesized_reward, multi_trace_info = fa.webthink(idx=idx, initial_prompt_template=fa.WEBTHINK_PROMPT_TEMPLATE, to_print=False, num_traces=3)
+        # Compute metrics for synthesized answer using direct comparison (not get_metrics)
+        synthesized_answer = multi_trace_info.get('answer') if isinstance(multi_trace_info, dict) else None
+        ground_truth_answer = multi_trace_info.get('gt_answer') if isinstance(multi_trace_info, dict) else None
+        if synthesized_answer is not None and ground_truth_answer is not None:
+            em = int(synthesized_answer == ground_truth_answer)
+            f1 = em
+            reward = em
+        else:
+            em = f1 = reward = 0
         new_framework_result = {
             'question_idx': idx,
             'question_text': multi_trace_info.get('question_text') if isinstance(multi_trace_info, dict) else None,
-            'synthesized_answer': multi_trace_info.get('answer') if isinstance(multi_trace_info, dict) else None,
-            'ground_truth_answer': multi_trace_info.get('gt_answer') if isinstance(multi_trace_info, dict) else None,
+            'synthesized_answer': synthesized_answer,
+            'ground_truth_answer': ground_truth_answer,
+            'em': em,
+            'reward': reward,
+            'f1': f1,
             'traces': multi_trace_info.get('individual_traces') if isinstance(multi_trace_info, dict) else multi_trace_info
         }
         fa.append_to_json(new_framework_result, NEW_FRAMEWORK_OUTPUT_FILE_PATH)

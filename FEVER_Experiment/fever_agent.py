@@ -150,16 +150,19 @@ def synthesize_answer_with_llm(list_of_trajectories, claim_for_context=""):
     if not valid_trajectories:
         return "NOT ENOUGH INFO" # Default if no valid trajectories
 
-    prompt_template = """As an expert fact-checker, your task is to determine the veracity of a given claim based on the following reasoning trajectories. Each trajectory represents an attempt to verify the claim.
-The claim is: "{claim_context}"
+    prompt_template = """You are an answer aggregation assistant. Your task is to review the reasoning trajectories below, each of which ends with a verdict about the claim.
 
-Review all trajectories, analyze the reasoning steps, the information gathered, and the final conclusion of each. Based on your comprehensive analysis of all trajectories, decide if the claim is SUPPORTED, REFUTES, or if there is NOT ENOUGH INFO.
+Your goal is to find the best overall answer by considering the conclusions reached in the trajectories. If most trajectories agree, that is a strong signal, but also consider the quality and justification of the reasoning in each trajectory. If a minority trajectory provides much stronger evidence or reasoning than the majority, you may select its answer instead. Clearly prefer the majority answer unless there is a compelling, well-justified reason to do otherwise.
+
+Claim:
+"{claim_context}"
 
 Reasoning Trajectories:
 {formatted_trajectories}
 
-Based on your analysis of all the reasoning trajectories, is the claim SUPPORTED, REFUTES, or NOT ENOUGH INFO?
-Final Verdict:""" # Using "Final Verdict:" to guide the LLM for a single label
+Based on your review, what is the best overall answer? Choose one of: SUPPORTS, REFUTES, or NOT ENOUGH INFO.
+
+Final Answer (SUPPORTS / REFUTES / NOT ENOUGH INFO):""" # Using "Final Verdict:" to guide the LLM for a single label
 
     formatted_trajectories = ""
     for i, traj in enumerate(valid_trajectories):

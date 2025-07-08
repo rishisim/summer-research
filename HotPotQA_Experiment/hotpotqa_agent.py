@@ -118,14 +118,21 @@ def synthesize_answer_with_llm(list_of_trajectories, question_for_context=""):
     # If only one trajectory, we might still want the LLM to extract the answer from it,
     # or we could attempt to parse its Finish[] action. For now, let LLM handle it.
 
-    prompt_template = """As an expert analyst, your task is to determine the single best answer to a question based on the following reasoning trajectories. Each trajectory represents an attempt to answer the question.
+    prompt_template = """
+    
+You are an expert analyst. Your task is to determine the single best answer to the question, based on the reasoning trajectories provided below.
+
+Each trajectory represents a separate attempt to answer the same question, including the reasoning steps and final answer.
+
+Carefully review all trajectories and evaluate the logical soundness, factual accuracy, relevance to the question, and completeness of each. Then, identify the answer that is best supported by reasoning and evidence.
+
+Question Context:
 {question_context}
-Review all trajectories, analyze the reasoning steps, the information gathered, and the final conclusion of each. Identify the most consistent, factually correct, and well-supported answer based on these trajectories. Return that single best answer.
 
 Reasoning Trajectories:
 {formatted_trajectories}
 
-Based on your analysis of all the reasoning trajectories, what is the single best answer to the question?
+Based on your analysis of all the reasoning trajectories, what is the single best answer to the question? Simply output the final answer without any additional commentary or explanation.
 Final Answer:"""
 
     question_context_str = ""
