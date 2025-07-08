@@ -1,29 +1,5 @@
 import random
 import hotpotqa_agent as hqa # Import our library
-import json
-import os
-
-def get_processed_indices(output_file_path):
-    processed_indices = set()
-    if os.path.exists(output_file_path):
-        try:
-            with open(output_file_path, 'r', encoding='utf-8') as f:
-                try:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        for entry in data:
-                            idx = entry.get('question_idx')
-                            if idx is not None:
-                                processed_indices.add(idx)
-                    elif isinstance(data, dict):
-                        idx = data.get('question_idx')
-                        if idx is not None:
-                            processed_indices.add(idx)
-                except Exception as e:
-                    print(f"Warning: Could not parse {output_file_path} as JSON array: {e}")
-        except Exception as e:
-            print(f"Warning: Could not read {output_file_path}: {e}")
-    return processed_indices
 
 # --- Main Configuration ---
 NUM_TASKS_TODAY = 10
@@ -34,11 +10,8 @@ print("Setting up dataset indices...")
 all_indices = list(range(7405))
 random.Random(42).shuffle(all_indices)
 
-# Exclude already processed indices
-processed_indices = get_processed_indices(BASELINE_OUTPUT_FILE) | get_processed_indices(NEW_FRAMEWORK_OUTPUT_FILE)
-remaining_indices = [idx for idx in all_indices if idx not in processed_indices]
-indices_for_today = remaining_indices[:NUM_TASKS_TODAY]
-print(f"Prepared to run {len(indices_for_today)} new tasks (skipping {len(processed_indices)} already processed).")
+indices_for_today = all_indices[:NUM_TASKS_TODAY]
+print(f"Prepared to run {len(indices_for_today)} tasks.")
 
 # --- Main Execution Loop ---
 for i, idx in enumerate(indices_for_today):
