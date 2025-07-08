@@ -19,7 +19,7 @@ except Exception as e:
 
 # --- Main Configuration ---
 MAX_FEVER_DEV_EXAMPLES = 7405 # Based on paper_dev.jsonl line count
-NUM_TASKS_TODAY = 10 # Keep small for testing, can be increased later
+NUM_TASKS_TODAY = 9 # Keep small for testing, can be increased later
 BASELINE_OUTPUT_FILE = 'react_baseline_results.json' # Path relative to FEVER_Experiment
 NEW_FRAMEWORK_OUTPUT_FILE = 'react_multi_trace_results.json' # Path relative to FEVER_Experiment
 BASELINE_OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), BASELINE_OUTPUT_FILE)
@@ -27,10 +27,38 @@ NEW_FRAMEWORK_OUTPUT_FILE_PATH = os.path.join(os.path.dirname(__file__), NEW_FRA
 
 
 print("Setting up dataset indices for FEVER...")
+
+def get_processed_indices(output_file_path):
+    processed_indices = set()
+    if os.path.exists(output_file_path):
+        try:
+            with open(output_file_path, 'r', encoding='utf-8') as f:
+                try:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        for entry in data:
+                            idx = entry.get('question_idx')
+                            if idx is not None:
+                                processed_indices.add(idx)
+                    elif isinstance(data, dict):
+                        idx = data.get('question_idx')
+                        if idx is not None:
+                            processed_indices.add(idx)
+                except Exception as e:
+                    print(f"Warning: Could not parse {output_file_path} as JSON array: {e}")
+        except Exception as e:
+            print(f"Warning: Could not read {output_file_path}: {e}")
+    return processed_indices
+
+# Collect all processed indices from both output files
+processed_indices = get_processed_indices(BASELINE_OUTPUT_FILE_PATH) | get_processed_indices(NEW_FRAMEWORK_OUTPUT_FILE_PATH)
+
 all_indices = list(range(MAX_FEVER_DEV_EXAMPLES))
 random.Random(42).shuffle(all_indices)
-indices_for_today = all_indices[:NUM_TASKS_TODAY]
-print(f"Prepared to run {len(indices_for_today)} tasks on FEVER dev set.")
+# Exclude already processed indices
+remaining_indices = [idx for idx in all_indices if idx not in processed_indices]
+indices_for_today = remaining_indices[:NUM_TASKS_TODAY]
+print(f"Prepared to run {len(indices_for_today)} new tasks on FEVER dev set (skipping {len(processed_indices)} already processed).")
 
 # --- Main Execution Loop ---
 for i, idx in enumerate(indices_for_today):
