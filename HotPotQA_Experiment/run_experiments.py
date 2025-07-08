@@ -26,7 +26,7 @@ def get_processed_indices(output_file_path):
     return processed_indices
 
 # --- Main Configuration ---
-NUM_TASKS_TODAY = 10
+NUM_TASKS_TODAY = 6
 BASELINE_OUTPUT_FILE = 'HotPotQA_Experiment/react_baseline_results.json'
 NEW_FRAMEWORK_OUTPUT_FILE = 'HotPotQA_Experiment/react_cot_synth_results.json'
 

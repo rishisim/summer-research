@@ -193,9 +193,13 @@ def webthink(idx=None, initial_prompt_template=WEBTHINK_PROMPT_TEMPLATE, to_prin
 
         if not done: # If loop finished without 'Finish' action
             obs, r, done, info = step(env, "finish[]") # Default finish
-            if 'traj' not in info: # Ensure info is a dict
+            if not isinstance(info, dict):
                 info = {}
-            info.update({'finish_action_obs': obs})
+            info['finish_action_obs'] = obs
+            # Add standard keys if missing (for consistency)
+            for key in ["answer", "gt_answer", "reward", "em", "f1"]:
+                if key not in info:
+                    info[key] = None
 
 
         trace_info_updates = info.copy()
@@ -211,16 +215,29 @@ def webthink(idx=None, initial_prompt_template=WEBTHINK_PROMPT_TEMPLATE, to_prin
         # The 'info' from env.step() can overwrite keys if not handled carefully.
         # Let's assume 'info' from env.step() is the base and we update it.
         # However, the original code did info.copy() then updated.
-        # Let's stick to the original logic for now: info from step is primary, then we add our stuff.
-        # The notebook code was:
-        # trace_info = info.copy()
-        # trace_info.update({...})
-        # This means `info` from the last step (or finish[]) is the base.
+        # Let's stick to the original logic for now: info from the last step (or finish[]) is the base.
 
         # Let's refine how trace_info is constructed to ensure all original info fields are kept
         # and our specific trace metadata is added.
         final_trace_info = info # Start with the info from the last env.step
         final_trace_info.update(trace_info_updates) # Add/overwrite with our collected data
+
+        # Standardize output keys for baseline output
+        expected_keys = [
+            "steps", "answer", "gt_answer", "question_idx", "reward",
+            "em", "f1", "n_calls", "n_badcalls", "traj", "question_text", "trace_num",
+            "finish_action_obs"
+        ]
+        for key in expected_keys:
+            if key not in final_trace_info:
+                # For 'steps', try to infer from traj if possible
+                if key == "steps":
+                    # Count 'Thought' occurrences as steps
+                    traj_str = final_trace_info.get("traj", "")
+                    final_trace_info["steps"] = traj_str.count("Thought ")
+                else:
+                    final_trace_info[key] = None
+
         all_traces_info.append(final_trace_info)
 
         if to_print:
