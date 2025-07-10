@@ -28,18 +28,31 @@ def llm(prompt, stop=["\n"], num_traces=1):
   time.sleep(4.1)
 
   temperature_setting = 0.0 if num_traces == 1 else 0.7
-  response = client.models.generate_content(
-    model="gemini-2.5-flash-lite-preview-06-17",
-    contents=prompt,
-    config=types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(thinking_budget=0), # Disables thinking
-        stop_sequences=stop,
-        temperature=temperature_setting,
-        max_output_tokens=100,
-        top_p=1.0
-    )
-  )
-  return response.text
+  max_retries = 3
+  for attempt in range(max_retries):
+    try:
+      response = client.models.generate_content(
+        model="gemini-2.5-flash-lite-preview-06-17",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(thinking_budget=0), # Disables thinking
+            stop_sequences=stop,
+            temperature=temperature_setting,
+            max_output_tokens=100,
+            top_p=1.0
+        )
+      )
+      if response and response.text:
+        return response.text
+      time.sleep(2)  # Wait before retry if we got an empty response
+    except Exception as e:
+      print(f"LLM call failed (attempt {attempt + 1}/{max_retries}): {str(e)}")
+      if attempt < max_retries - 1:
+        time.sleep(2)  # Wait before retry
+      else:
+        raise  # Re-raise the last exception if we're out of retries
+  
+  return "I need to finish now.\nFinish[Unable to proceed due to API error]"  # Fallback response if all retries failed
 
 import re
 
@@ -210,14 +223,36 @@ def webthink(idx=None, initial_prompt_template=WEBTHINK_PROMPT_TEMPLATE, to_prin
 
         for i in range(1, 8): # Max 7 steps per trace
             n_calls += 1
-            thought_action = llm(current_prompt + f"Thought {i}:", stop=[f"\nObservation {i}:"], num_traces=1 if num_traces == 1 else 0.7) # Pass num_traces to llm correctly
             try:
-                thought, action = thought_action.strip().split(f"\nAction {i}: ")
-            except:
+                thought_action = llm(current_prompt + f"Thought {i}:", stop=[f"\nObservation {i}:"], num_traces=1 if num_traces == 1 else 0.7)
+                if not thought_action:
+                    raise ValueError("Empty response from LLM")
+                    
+                # Try to split into thought and action
+                try:
+                    thought, action = thought_action.strip().split(f"\nAction {i}: ")
+                except ValueError:
+                    # If we can't split properly, try to salvage what we can
+                    parts = thought_action.strip().split('\n')
+                    thought = parts[0] if parts else "I need to finish now."
+                    
+                    # Make a separate call for the action
+                    action = llm(current_prompt + f"Thought {i}: {thought}\nAction {i}:", 
+                               stop=[f"\n"], 
+                               num_traces=1 if num_traces == 1 else 0.7)
+                    
+                    if not action:
+                        action = "Finish[Unable to determine next action]"
+                    else:
+                        action = action.strip()
+                    
+                    n_badcalls += 1
+                    n_calls += 1  # Count the extra LLM call
+            except Exception as e:
+                print(f"Error in step {i}: {str(e)}")
+                thought = "I need to finish now."
+                action = "Finish[Error occurred while processing]"
                 n_badcalls += 1
-                n_calls += 1 # LLM call for action also counts
-                thought = thought_action.strip().split('\n')[0]
-                action = llm(current_prompt + f"Thought {i}: {thought}\nAction {i}:", stop=[f"\n"], num_traces=1 if num_traces == 1 else 0.7).strip() # Pass num_traces
 
             obs, r, done, info = step(env, action[0].lower() + action[1:])
             obs = obs.replace('\\n', '')
