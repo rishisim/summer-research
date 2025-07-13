@@ -28,18 +28,31 @@ def llm(prompt, stop=["\n"], num_traces=1):
   time.sleep(4.1)
 
   temperature_setting = 0.0 if num_traces == 1 else 0.7
-  response = client.models.generate_content(
-    model="gemini-2.5-flash-lite-preview-06-17",
-    contents=prompt,
-    config=types.GenerateContentConfig(
-        thinking_config=types.ThinkingConfig(thinking_budget=0), # Disables thinking
-        stop_sequences=stop,
-        temperature=temperature_setting,
-        max_output_tokens=100,
-        top_p=1.0
-    )
-  )
-  return response.text
+  max_retries = 3
+  for attempt in range(max_retries):
+    try:
+      response = client.models.generate_content(
+        model="gemini-2.5-flash-lite-preview-06-17",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            thinking_config=types.ThinkingConfig(thinking_budget=0), # Disables thinking
+            stop_sequences=stop,
+            temperature=temperature_setting,
+            max_output_tokens=100,
+            top_p=1.0
+        )
+      )
+      if response and response.text:
+        return response.text
+      time.sleep(2)  # Wait before retry if we got an empty response
+    except Exception as e:
+      print(f"LLM call failed (attempt {attempt + 1}/{max_retries}): {str(e)}")
+      if attempt < max_retries - 1:
+        time.sleep(2)  # Wait before retry
+      else:
+        raise  # Re-raise the last exception if we're out of retries
+  
+  return "I need to finish now.\nFinish[Unable to proceed due to API error]"  # Fallback response if all retries failed
 
 import re
 
@@ -80,37 +93,77 @@ def extract_answers_from_traces(all_traces_info):
                 extracted_answers.append(None)
     return [ans for ans in extracted_answers if ans is not None]
 
-def synthesize_answer_with_llm(list_of_answers, question_for_context=""):
-    """
-    Synthesizes a single best answer from a list of answers using an LLM.
-    Includes the original question for better context if provided.
-    """
-    if not list_of_answers:
-        return "Error: No answers provided to synthesize."
 
-    unique_answers = sorted(list(set(str(a).strip() for a in list_of_answers if str(a).strip())))
-    if len(unique_answers) == 0:
-        return "Error: No valid answers found after filtering to synthesize."
-    if len(unique_answers) == 1:
-        return unique_answers[0]
+def extract_trajectories_from_traces(all_traces_info):
+    """
+    Extracts the full trajectory string from each trace in the all_traces_info list.
+    """
+    extracted_trajectories = []
+    if not isinstance(all_traces_info, list):
+        print(f"Warning: extract_trajectories_from_traces expected a list, got {type(all_traces_info)}")
+        return extracted_trajectories
 
-    prompt_template = """As an expert analyst, your task is to determine the single best answer from the following list, which was generated in response to the same question.\n{question_context}\nReview all answers, identify the most consistent and factually correct choice, and return that single answer. For fixed-choice questions (like yes/no or numbers), this will be a majority vote. For text-based answers, synthesize the information into the most accurate and complete response. Ignore any clear outliers or factually incorrect statements.\n\nGenerated Answers:\n{formatted_answers}\n\nFinal Answer:"""
+    for i, trace_info in enumerate(all_traces_info):
+        trajectory = trace_info.get('traj', '')
+        if trajectory:
+            extracted_trajectories.append(trajectory)
+        else:
+            # Fallback or logging if a trajectory is empty/missing, though 'traj' should ideally always be there.
+            print(f"Warning: Missing trajectory in trace_info for trace {i}")
+            extracted_trajectories.append(f"Trace {i+1} was empty or missing.") # Placeholder for missing traj
+
+    return extracted_trajectories
+
+
+def synthesize_answer_with_llm(list_of_trajectories, question_for_context=""):
+    """
+    Synthesizes a single best answer from a list of full reasoning trajectories using an LLM.
+    Includes the original question for better context.
+    """
+    if not list_of_trajectories:
+        return "Error: No trajectories provided to synthesize."
+
+    # Filter out any empty or placeholder trajectories if necessary, though ideally all should be valid.
+    valid_trajectories = [str(t).strip() for t in list_of_trajectories if str(t).strip()]
+    if not valid_trajectories:
+        return "Error: No valid trajectories found after filtering to synthesize."
+
+    # If only one trajectory, we might still want the LLM to extract the answer from it,
+    # or we could attempt to parse its Finish[] action. For now, let LLM handle it.
+
+    prompt_template = """
+    
+You are an expert analyst. Your task is to determine the single best answer to the question, based on the reasoning trajectories provided below.
+
+Each trajectory represents a separate attempt to answer the same question, including the reasoning steps and final answer.
+
+Carefully review all trajectories and evaluate the logical soundness, factual accuracy, relevance to the question, and completeness of each. Then, identify the answer that is best supported by reasoning and evidence.
+
+Question Context:
+{question_context}
+
+Reasoning Trajectories:
+{formatted_trajectories}
+
+Based on your analysis of all the reasoning trajectories, what is the single best answer to the question? Simply output the final answer without any additional commentary or explanation.
+Final Answer:"""
 
     question_context_str = ""
     if question_for_context:
         question_context_str = f"The question asked was: \"{question_for_context}\"\n\n"
 
-    formatted_answers = ""
-    for i, ans in enumerate(list_of_answers):
-        formatted_answers += f"{i+1}. {ans}\n"
-    formatted_answers = formatted_answers.strip()
+    formatted_trajectories = ""
+    for i, traj in enumerate(valid_trajectories):
+        formatted_trajectories += f"--- Trajectory {i+1} ---\n{traj}\n--- End of Trajectory {i+1} ---\n\n"
+    formatted_trajectories = formatted_trajectories.strip()
 
     synthesizer_prompt = prompt_template.format(
         question_context=question_context_str,
-        formatted_answers=formatted_answers
+        formatted_trajectories=formatted_trajectories
     )
+    # print(f"DEBUG: Synthesizer prompt for HotPotQA:\n{synthesizer_prompt}") # For debugging
 
-    final_answer = llm(synthesizer_prompt, num_traces=1)
+    final_answer = llm(synthesizer_prompt, stop=["\n"], num_traces=1) # Stop at newline for cleaner answer
     return final_answer.strip()
 
 def append_to_json(data_dict, json_file_path):
@@ -170,14 +223,36 @@ def webthink(idx=None, initial_prompt_template=WEBTHINK_PROMPT_TEMPLATE, to_prin
 
         for i in range(1, 8): # Max 7 steps per trace
             n_calls += 1
-            thought_action = llm(current_prompt + f"Thought {i}:", stop=[f"\nObservation {i}:"], num_traces=1 if num_traces == 1 else 0.7) # Pass num_traces to llm correctly
             try:
-                thought, action = thought_action.strip().split(f"\nAction {i}: ")
-            except:
+                thought_action = llm(current_prompt + f"Thought {i}:", stop=[f"\nObservation {i}:"], num_traces=1 if num_traces == 1 else 0.7)
+                if not thought_action:
+                    raise ValueError("Empty response from LLM")
+                    
+                # Try to split into thought and action
+                try:
+                    thought, action = thought_action.strip().split(f"\nAction {i}: ")
+                except ValueError:
+                    # If we can't split properly, try to salvage what we can
+                    parts = thought_action.strip().split('\n')
+                    thought = parts[0] if parts else "I need to finish now."
+                    
+                    # Make a separate call for the action
+                    action = llm(current_prompt + f"Thought {i}: {thought}\nAction {i}:", 
+                               stop=[f"\n"], 
+                               num_traces=1 if num_traces == 1 else 0.7)
+                    
+                    if not action:
+                        action = "Finish[Unable to determine next action]"
+                    else:
+                        action = action.strip()
+                    
+                    n_badcalls += 1
+                    n_calls += 1  # Count the extra LLM call
+            except Exception as e:
+                print(f"Error in step {i}: {str(e)}")
+                thought = "I need to finish now."
+                action = "Finish[Error occurred while processing]"
                 n_badcalls += 1
-                n_calls += 1 # LLM call for action also counts
-                thought = thought_action.strip().split('\n')[0]
-                action = llm(current_prompt + f"Thought {i}: {thought}\nAction {i}:", stop=[f"\n"], num_traces=1 if num_traces == 1 else 0.7).strip() # Pass num_traces
 
             obs, r, done, info = step(env, action[0].lower() + action[1:])
             obs = obs.replace('\\n', '')
@@ -261,18 +336,21 @@ def webthink(idx=None, initial_prompt_template=WEBTHINK_PROMPT_TEMPLATE, to_prin
         if to_print:
             print("\n--- Starting Answer Synthesis ---")
 
-        extracted_answers = extract_answers_from_traces(all_traces_info)
+        # MODIFIED: Extract full trajectories instead of just answers
+        extracted_trajectories = extract_trajectories_from_traces(all_traces_info)
 
         if to_print:
-            print(f"Extracted Answers for Synthesis: {extracted_answers}")
+            print(f"Extracted Trajectories for Synthesis: {len(extracted_trajectories)} trajectories")
+            # for i, traj in enumerate(extracted_trajectories):
+            #     print(f"Trajectory {i+1}:\n{traj[:300]}...\n") # Print start of each trajectory for brevity
 
-        if not extracted_answers:
+        if not extracted_trajectories:
             if to_print:
-                print("Warning: No answers extracted from traces. Cannot synthesize.")
+                print("Warning: No trajectories extracted. Cannot synthesize.")
             # Return all trace details even if synthesis fails
-            return "[SYNTHESIS_FAILED_NO_EXTRACTED_ANSWERS]", all_traces_info
+            return "[SYNTHESIS_FAILED_NO_EXTRACTED_TRAJECTORIES]", all_traces_info
 
-        synthesized_answer = synthesize_answer_with_llm(extracted_answers, question_for_synthesis)
+        synthesized_answer = synthesize_answer_with_llm(extracted_trajectories, question_for_synthesis)
 
         if to_print:
             print(f"Synthesized Answer: {synthesized_answer}")
