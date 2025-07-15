@@ -7,8 +7,8 @@ import alfworld
 import alfworld.agents.environment
 from prompts import ALFWORLD_PROMPTS
 
-import google.generativeai as genai
-from google.generativeai import types
+from google import genai # Ensuring this matches the notebook
+from google.genai import types # Ensuring this matches the notebook
 
 # --- LLM and Helper Functions ---
 # The client gets the API key from the environment variable `API_KEY`.
