@@ -267,3 +267,11 @@ Delete your now-merged feature branch.
 When I created it, I first git cloned the repository with the ReAct stuff inside it (git clone [https link]) so now its in the local folder. Then I created an env, and activated the environment ```.\venv\Scripts\activate```, so that I can install dependencies within the environment.
 
 Run (venv) PS C:\Users\rishi\Documents\summer-research\react-research> $env:GOOGLE_API_KEY = "API_KEY_HERE" to execute the python scripts.
+
+
+#### For Linux:
+
+```rishi@rishisim-slim:/mnt/c/Users/Rishi/Documents/summer-research/react-research$ source /mnt/c/Users/Rishi/Documents/summer-research/react-research/venv-linux/bin/activate```
+
+```rishi@rishisim-slim:/mnt/c/Users/Rishi/Documents/summer-research/react-research$ export GOOGLE_API_KEY="API_KEY_HERE"```
+
