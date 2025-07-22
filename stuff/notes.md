@@ -266,7 +266,7 @@ Delete your now-merged feature branch.
 ## Project Creation/Development Notes
 When I created it, I first git cloned the repository with the ReAct stuff inside it (git clone [https link]) so now its in the local folder. Then I created an env, and activated the environment ```.\venv\Scripts\activate```, so that I can install dependencies within the environment.
 
-For gemini ```.\gemini-agent-env\Scripts\Activate.ps1```
+For gemini ```.\gemini-agent-env\Scripts\Activate.ps1``` and on wsl to run webshop: ```./run_dev.sh```
 
 Run (venv) PS C:\Users\rishi\Documents\summer-research\react-research> $env:GOOGLE_API_KEY = "API_KEY_HERE" to execute the python scripts.
 
