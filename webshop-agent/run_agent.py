@@ -33,7 +33,7 @@ def llm(prompt, stop=None, num_traces=1):
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
                 stop_sequences=stop,
                 temperature=temperature_setting,
-                max_output_tokens=100,
+                max_output_tokens=200,
                 top_p=1.0
             )
         )
@@ -71,27 +71,44 @@ def webshop_text(session, page_type, **kwargs):
 
         html = requests.get(url).text
         html_obj = BeautifulSoup(html, 'html.parser')
-        # FIX: Changed text=True to string=True to remove DeprecationWarning
         texts = html_obj.find_all(string=True)
         visible_texts = list(filter(tag_visible, texts))
         
+        # Match notebook formatting exactly
         observation = ''
         option_type = ''
         page_options = {}
         asins = []
+        cnt = 0
+        prod_cnt = 0
+        just_prod = 0
+        
         for t in visible_texts:
-            if not str(t).strip(): continue
-            parent_name = t.parent.name
-            if parent_name == 'button': processed_t = f'\n[{t}] '
-            elif parent_name == 'label':
-                processed_t = f'[{t}]'
-                page_options[str(t)] = option_type
-            elif t.parent.get('class') == ["product-link"]:
+            if t == '\n': continue
+            if t.replace('\n', '').replace('\\n', '').replace(' ', '') == '': continue
+            
+            if t.parent.name == 'button':  # button
                 processed_t = f'\n[{t}] '
+            elif t.parent.name == 'label':  # options
+                if f"'{t}'" in url:
+                    processed_t = f'[[{t}]]'
+                else:
+                    processed_t = f'[{t}]'
+                page_options[str(t)] = option_type
+            elif t.parent.get('class') == ["product-link"]: # product asins
+                processed_t = f'\n[{t}] '
+                if prod_cnt >= 3:
+                    processed_t = ''
+                prod_cnt += 1
                 asins.append(str(t))
-            else:
+                just_prod = 0
+            else: # regular, unclickable text
                 processed_t = '\n' + str(t) + ' '
+                if cnt < 2 and page_type != 'init': processed_t = ''
+                if just_prod <= 2 and prod_cnt >= 4: processed_t = ''
                 option_type = str(t)
+                cnt += 1
+            just_prod += 1
             observation += processed_t
         
         info = {'asins': asins, 'option_types': page_options}
@@ -113,12 +130,12 @@ class WebShopEnv:
         action_type = action.split('[')[0]
 
         if action_type == 'reset':
-            self.sessions[session] = {'session': session, 'page_type': 'init'}
+            self.sessions[session] = {'session': session, 'page_type': 'init'}  # Match notebook format
         elif action_type == 'think': pass
         elif action_type == 'search':
             assert self.sessions[session]['page_type'] == 'init'
             query = action[7:-1]
-            self.sessions[session] = {'page_type': 'search', 'query_string': query, 'page_num': 1}
+            self.sessions[session] = {'session': session, 'page_type': 'search', 'query_string': query, 'page_num': 1}
         elif action_type == 'click':
             button = action[6:-1]
             page_type = self.sessions[session]['page_type']
@@ -127,26 +144,36 @@ class WebShopEnv:
                 self.sessions[session]['page_type'] = 'end'
                 done = True
             elif button == 'Back to Search':
-                self.sessions[session]['page_type'] = 'init'
+                assert page_type in ['search', 'item_sub', 'item']
+                self.sessions[session] = {'session': session, 'page_type': 'init'}
             elif button == '< Prev':
-                if page_type == 'item_sub': self.sessions[session]['page_type'] = 'item'
-                elif page_type == 'item': self.sessions[session]['page_type'] = 'search'
+                assert page_type in ['search', 'item_sub', 'item']
+                if page_type == 'item_sub': 
+                    self.sessions[session]['page_type'] = 'item'
+                elif page_type == 'item': 
+                    self.sessions[session]['page_type'] = 'search'
+                    self.sessions[session]['options'] = {}  # Clear options when going back
             elif button in ACTION_TO_TEMPLATE:
-                self.sessions[session].update({'page_type': 'item_sub', 'subpage': button})
+                assert page_type == 'item'  # Only from main item page
+                self.sessions[session]['page_type'] = 'item_sub'
+                self.sessions[session]['subpage'] = button
             else:
                 if page_type == 'search':
-                    assert button in self.sessions[session].get('asins', [])
-                    self.sessions[session].update({'page_type': 'item', 'asin': button})
+                    assert button in self.sessions[session].get('asins', [])  # must be asins
+                    self.sessions[session]['page_type'] = 'item'
+                    self.sessions[session]['asin'] = button
                 elif page_type == 'item':
-                    assert 'option_types' in self.sessions[session] and button in self.sessions[session]['option_types']
+                    assert 'option_types' in self.sessions[session]
+                    assert button in self.sessions[session]['option_types'], (button, self.sessions[session]['option_types'])  # must be options
                     option_type = self.sessions[session]['option_types'][button]
-                    if 'options' not in self.sessions[session]: self.sessions[session]['options'] = {}
+                    if 'options' not in self.sessions[session]: 
+                        self.sessions[session]['options'] = {}
                     self.sessions[session]['options'][option_type] = button
                     observation_ = f'You have clicked {button}.'
         else:
             assert False, f"Invalid action format: {action}"
 
-        observation, info = webshop_text(session=session, **self.sessions[session])
+        observation, info = webshop_text(session=session, **{k:v for k,v in self.sessions[session].items() if k != 'session'})
         if 'error' in info: return observation, 0.0, True
         if observation_: observation = observation_
         self.sessions[session].update(info)
@@ -213,8 +240,8 @@ def run_single_episode(env, session_id, instruction, to_print=True, max_steps=15
         action = llm(full_prompt, stop=['\n']).strip()
         if not action: break
     
-    print("Max steps reached. Ending episode.")
-    return 0.0, trajectory
+    print(f"Max steps reached. Ending episode with reward: {reward}")
+    return reward, trajectory
 
 # --- File Utilities & Experiment Runner ---
 def append_to_json(data, filename):
@@ -250,7 +277,7 @@ def main():
     env = WebShopEnv()
     output_file = 'webshop_trajectories.json'
     
-    MAX_WEBSHOP_TASKS = 500
+    MAX_WEBSHOP_TASKS = 300  # Limited to 0-299 range
     all_indices = list(range(MAX_WEBSHOP_TASKS))
     random.Random(42).shuffle(all_indices)
 
@@ -267,7 +294,7 @@ def main():
 
     tasks_run_this_session = 0
     for i, task_index in enumerate(tasks_to_run):
-        session_id = f"fixed_{task_index}"
+        session_id = str(task_index)  # Use just the number, not "fixed_" prefix
         print('=================================')
         print(f"RUNNING TASK {i+1}/{len(tasks_to_run)} (Session: {session_id})")
         print('=================================')
@@ -280,10 +307,12 @@ def main():
             # *** FIX: Safely check for the instruction before trying to access it ***
             instruction_match = re.search(r"Instruction:\s*(.*)", obs, re.DOTALL)
             if not instruction_match:
+                print(f"DEBUG - Full observation: {obs}")  # Print full observation if no match
                 raise ValueError(f"Instruction pattern not found in observation for session {session_id}")
             
             instruction = instruction_match.group(1).strip()
             print(f"Instruction: {instruction}")
+            print("="*50)
             
             reward, trajectory = run_single_episode(env, session_id, instruction)
             
