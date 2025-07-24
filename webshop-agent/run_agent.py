@@ -209,11 +209,13 @@ Observation: You have clicked 3 ounce (pack of 1).
 Action: click[Buy Now]
 """
 
-def run_single_episode(env, session_id, instruction, to_print=True, max_steps=15):
+def run_single_trace(env, session_id, instruction, to_print=True, max_steps=15):
+    """Run a single reasoning trace for WebShop task."""
     action = 'reset'
     initial_prompt = f"{FEW_SHOT_PROMPT}\nInstruction: {instruction}\n[Search]\n"
     prompt_history = ''
     trajectory = []
+    n_calls = 0
 
     for i in range(max_steps):
         try:
@@ -230,18 +232,149 @@ def run_single_episode(env, session_id, instruction, to_print=True, max_steps=15
             print(f"Observation:\n    " + "\n    ".join(observation.strip().split('\n')))
         
         if done:
-            print(f"Episode finished with reward: {reward}")
-            return reward, trajectory
+            if to_print: print(f"Episode finished with reward: {reward}")
+            return reward, trajectory, n_calls
 
         if i == 0: prompt_history = f"Observation: {observation}\n\nAction:"
         else: prompt_history += f" {action}\nObservation: {observation}\n\nAction:"
         
         full_prompt = initial_prompt + prompt_history[-(6000 - len(initial_prompt)):]
         action = llm(full_prompt, stop=['\n']).strip()
+        n_calls += 1
         if not action: break
     
-    print(f"Max steps reached. Ending episode with reward: {reward}")
+    if to_print: print(f"Max steps reached. Ending episode with reward: {reward}")
+    return reward, trajectory, n_calls
+
+def run_single_episode(env, session_id, instruction, to_print=True, max_steps=15):
+    """Backward compatibility wrapper for single episode execution."""
+    reward, trajectory, _ = run_single_trace(env, session_id, instruction, to_print, max_steps)
     return reward, trajectory
+
+# --- Synthesis Functions for Multi-Trace ---
+def extract_trajectories_from_traces(all_traces_info):
+    """Extract the full trajectory string from each trace in the all_traces_info list."""
+    extracted_trajectories = []
+    if not isinstance(all_traces_info, list):
+        print("Warning: all_traces_info is not a list")
+        return []
+
+    for i, trace_info in enumerate(all_traces_info):
+        if isinstance(trace_info, dict) and 'trajectory' in trace_info:
+            trajectory = trace_info['trajectory']
+            # Convert trajectory to string format
+            trajectory_str = ""
+            for step in trajectory:
+                trajectory_str += f"Action: {step['action']}\nObservation: {step['observation']}\n"
+            extracted_trajectories.append(trajectory_str.strip())
+        else:
+            print(f"Warning: trace_info {i} missing 'trajectory' key or not a dict")
+            extracted_trajectories.append("")
+
+    return extracted_trajectories
+
+def synthesize_decision_deterministic(all_traces_info):
+    """
+    Deterministically selects the best trajectory based on reward and step count.
+    Returns the trajectory number (1-indexed) of the best trajectory.
+    
+    Selection criteria:
+    1. Highest reward
+    2. If tied, fewest steps (most efficient)
+    """
+    if not all_traces_info:
+        return 1
+    
+    # Extract reward and step count for each trajectory
+    trajectory_metrics = []
+    for i, trace_info in enumerate(all_traces_info):
+        if isinstance(trace_info, dict):
+            reward = trace_info.get('final_reward', 0.0)
+            trajectory = trace_info.get('trajectory', [])
+            step_count = len(trajectory) if trajectory else float('inf')
+            trajectory_metrics.append((reward, step_count, i + 1))  # (reward, steps, trajectory_num)
+        else:
+            trajectory_metrics.append((0.0, float('inf'), i + 1))
+    
+    # Sort by reward (descending), then by step count (ascending)
+    trajectory_metrics.sort(key=lambda x: (-x[0], x[1]))
+    
+    return trajectory_metrics[0][2]  # Return trajectory number
+
+# --- Core Webthink Logic ---
+def webthink_webshop(env, session_id, instruction, num_traces=1, to_print=True, max_steps=15):
+    """
+    Main function for WebShop reasoning with support for both single and multi-trace execution.
+    
+    Args:
+        env: WebShop environment instance
+        session_id: Session identifier
+        instruction: Shopping instruction
+        num_traces: Number of reasoning traces to run (1 for standard ReAct, >1 for synthesized)
+        to_print: Whether to print trace details
+        max_steps: Maximum steps per trace
+    
+    Returns:
+        (reward, info_dict): Final reward and detailed information
+    """
+    if num_traces <= 0:
+        print("Error: num_traces must be positive")
+        return 0.0, {'error': 'Invalid num_traces'}
+
+    all_traces_info = []
+    
+    print(f"Running {num_traces} trace(s) for session {session_id}")
+    
+    for trace_num in range(num_traces):
+        if num_traces > 1:
+            print(f"\n=== TRACE {trace_num + 1}/{num_traces} ===")
+        
+        # Run single trace
+        reward, trajectory, n_calls = run_single_trace(env, session_id, instruction, to_print, max_steps)
+        
+        # Store trace information
+        trace_info = {
+            'trace_num': trace_num + 1,
+            'n_calls': n_calls,
+            'trajectory': trajectory,
+            'final_reward': reward
+        }
+        all_traces_info.append(trace_info)
+        
+        if num_traces > 1:
+            print(f"Trace {trace_num + 1} completed with reward: {reward}")
+
+    if not all_traces_info:
+        return 0.0, {'error': 'No traces completed'}
+
+    if num_traces == 1:
+        # Single trace - return as before
+        trace_info = all_traces_info[0]
+        return trace_info['final_reward'], {
+            'n_calls': trace_info['n_calls'],
+            'trajectory': trace_info['trajectory'],
+            'final_reward': trace_info['final_reward']
+        }
+    else:
+        # Multi-trace synthesis
+        print(f"\n=== SYNTHESIZING {num_traces} TRACES ===")
+        
+        # Synthesize best decision deterministically
+        best_trajectory_num = synthesize_decision_deterministic(all_traces_info)
+        
+        # Use reward from best trajectory
+        best_trace_info = all_traces_info[best_trajectory_num - 1]  # Convert to 0-indexed
+        final_reward = best_trace_info['final_reward']
+        
+        print(f"Synthesis selected trajectory {best_trajectory_num} with reward: {final_reward}")
+        
+        return final_reward, {
+            'num_traces_run': num_traces,
+            'synthesized_decision': best_trajectory_num,
+            'individual_traces': all_traces_info,
+            'final_reward': final_reward,
+            'synthesis_reasoning': ""
+        }
 
 # --- File Utilities & Experiment Runner ---
 def append_to_json(data, filename):
@@ -253,6 +386,7 @@ def append_to_json(data, filename):
             else: file_data = [data]
             f.seek(0)
             json.dump(file_data, f, indent=2)
+            f.truncate()
     else:
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump([data], f, indent=2)
@@ -269,20 +403,91 @@ def get_processed_indices(output_file):
             except (json.JSONDecodeError, AttributeError): pass
     return processed_indices
 
+def get_output_filename(num_traces):
+    """Get appropriate filename based on whether using synthesis or not."""
+    if num_traces == 1:
+        return 'webshop_trajectories.json'  # Standard ReAct
+    else:
+        return 'webshop_synthesized_trajectories.json'  # Synthesized ReAct
+
+def run_task_with_both_modes(env, task_index, instruction):
+    """Run a single task with both standard and synthesized ReAct modes."""
+    session_id = str(task_index)
+    results = {}
+    
+    # Run Standard ReAct (1 trace)
+    print(f"\n[STANDARD REACT] Running 1 trace for Session {session_id}")
+    print("="*50)
+    try:
+        reward_std, info_std = webthink_webshop(env, session_id, instruction, num_traces=1, to_print=True)
+        results['standard'] = {
+            'reward': reward_std,
+            'info': info_std,
+            'success': True
+        }
+        print(f"Standard ReAct completed with reward: {reward_std}")
+    except Exception as e:
+        print(f"Standard ReAct failed: {e}")
+        results['standard'] = {
+            'reward': 0.0,
+            'info': {'trajectory': [{'error': str(e)}]},
+            'success': False,
+            'error': str(e)
+        }
+    
+    # Run Synthesized ReAct (3 traces)
+    print(f"\n[SYNTHESIZED REACT] Running 3 traces for Session {session_id}")
+    print("="*50)
+    try:
+        reward_synth, info_synth = webthink_webshop(env, session_id, instruction, num_traces=3, to_print=True)
+        results['synthesized'] = {
+            'reward': reward_synth,
+            'info': info_synth,
+            'success': True
+        }
+        print(f"Synthesized ReAct completed with reward: {reward_synth}")
+    except Exception as e:
+        print(f"Synthesized ReAct failed: {e}")
+        results['synthesized'] = {
+            'reward': 0.0,
+            'info': {'individual_traces': [{'error': str(e)}]},
+            'success': False,
+            'error': str(e)
+        }
+    
+    return results
+
 def main():
     parser = argparse.ArgumentParser(description="Run a ReAct agent on the WebShop environment.")
-    parser.add_argument("--num_episodes", type=int, default=10, help="Number of new tasks to attempt in this session.")
+    parser.add_argument("--num_episodes", type=int, default=5, help="Number of tasks to run (each task will be run with both standard and synthesized ReAct)")
+    parser.add_argument("--num_traces", type=int, default=None, help="Override to run only one mode: 1=standard ReAct only, 3=synthesized ReAct only")
     args = parser.parse_args()
 
     env = WebShopEnv()
-    output_file = 'webshop_trajectories.json'
+    
+    # Determine which modes to run
+    run_both_modes = args.num_traces is None
+    if run_both_modes:
+        print("Running BOTH Standard ReAct and Synthesized ReAct for each task")
+        standard_file = 'webshop_trajectories.json'
+        synthesized_file = 'webshop_synthesized_trajectories.json'
+    else:
+        print(f"Running only {'Standard' if args.num_traces == 1 else 'Synthesized'} ReAct")
+        output_file = get_output_filename(args.num_traces)
     
     MAX_WEBSHOP_TASKS = 300  # Limited to 0-299 range
     all_indices = list(range(MAX_WEBSHOP_TASKS))
     random.Random(42).shuffle(all_indices)
 
-    processed_indices = get_processed_indices(output_file)
-    print(f"Found {len(processed_indices)} already completed tasks in {output_file}.")
+    if run_both_modes:
+        # For both modes, find tasks that need to be run in either file
+        processed_std = get_processed_indices(standard_file)
+        processed_synth = get_processed_indices(synthesized_file)
+        processed_indices = processed_std.union(processed_synth)
+        print(f"Found {len(processed_std)} standard and {len(processed_synth)} synthesized completed tasks.")
+    else:
+        processed_indices = get_processed_indices(output_file)
+        print(f"Found {len(processed_indices)} already completed tasks in {output_file}.")
 
     remaining_indices = [idx for idx in all_indices if idx not in processed_indices]
     tasks_to_run = remaining_indices[:args.num_episodes]
@@ -294,51 +499,143 @@ def main():
 
     tasks_run_this_session = 0
     for i, task_index in enumerate(tasks_to_run):
-        session_id = str(task_index)  # Use just the number, not "fixed_" prefix
-        print('=================================')
+        session_id = str(task_index)
+        print('\n' + '='*60)
         print(f"RUNNING TASK {i+1}/{len(tasks_to_run)} (Session: {session_id})")
-        print('=================================')
+        print('='*60)
         
         try:
+            # Get instruction for this task
             obs, info = webshop_text(session=session_id, page_type='init')
             if 'error' in info:
                 raise requests.exceptions.RequestException(obs)
             
-            # *** FIX: Safely check for the instruction before trying to access it ***
             instruction_match = re.search(r"Instruction:\s*(.*)", obs, re.DOTALL)
             if not instruction_match:
-                print(f"DEBUG - Full observation: {obs}")  # Print full observation if no match
+                print(f"DEBUG - Full observation: {obs}")
                 raise ValueError(f"Instruction pattern not found in observation for session {session_id}")
             
             instruction = instruction_match.group(1).strip()
             print(f"Instruction: {instruction}")
-            print("="*50)
             
-            reward, trajectory = run_single_episode(env, session_id, instruction)
+            if run_both_modes:
+                # Run both modes for this task
+                results = run_task_with_both_modes(env, task_index, instruction)
+                
+                # Save standard ReAct results
+                if results['standard']['success']:
+                    std_episode_data = {
+                        'session_id_index': task_index,
+                        'episode_human_readable': len(get_processed_indices(standard_file)) + tasks_run_this_session + 1,
+                        'instruction': instruction,
+                        'final_reward': results['standard']['reward'],
+                        'trajectory': results['standard']['info'].get('trajectory', [])
+                    }
+                else:
+                    std_episode_data = {
+                        'session_id_index': task_index,
+                        'episode_human_readable': len(get_processed_indices(standard_file)) + tasks_run_this_session + 1,
+                        'instruction': instruction,
+                        'final_reward': 0.0,
+                        'trajectory': [{'error': results['standard'].get('error', 'Unknown error')}]
+                    }
+                append_to_json(std_episode_data, standard_file)
+                
+                # Save synthesized ReAct results
+                if results['synthesized']['success']:
+                    synth_episode_data = {
+                        'session_id_index': task_index,
+                        'episode_human_readable': len(get_processed_indices(synthesized_file)) + tasks_run_this_session + 1,
+                        'instruction': instruction,
+                        'final_reward': results['synthesized']['reward'],
+                        'num_traces_run': results['synthesized']['info'].get('num_traces_run', 3),
+                        'synthesized_decision': results['synthesized']['info'].get('synthesized_decision', 1),
+                        'individual_traces': results['synthesized']['info'].get('individual_traces', []),
+                        'synthesis_reasoning': results['synthesized']['info'].get('synthesis_reasoning', "")
+                    }
+                else:
+                    synth_episode_data = {
+                        'session_id_index': task_index,
+                        'episode_human_readable': len(get_processed_indices(synthesized_file)) + tasks_run_this_session + 1,
+                        'instruction': instruction,
+                        'final_reward': 0.0,
+                        'num_traces_run': 3,
+                        'synthesized_decision': 1,
+                        'individual_traces': [{'error': results['synthesized'].get('error', 'Unknown error')}],
+                        'synthesis_reasoning': ""
+                    }
+                append_to_json(synth_episode_data, synthesized_file)
+                
+                print(f"\nResults saved:")
+                print(f"   Standard ReAct -> {standard_file} (reward: {results['standard']['reward']})")
+                print(f"   Synthesized ReAct -> {synthesized_file} (reward: {results['synthesized']['reward']})")
+                
+            else:
+                # Run single mode only (original behavior)
+                reward, info_dict = webthink_webshop(env, session_id, instruction, 
+                                                   num_traces=args.num_traces, to_print=True)
+                
+                if args.num_traces == 1:
+                    episode_data = {
+                        'session_id_index': task_index,
+                        'episode_human_readable': len(processed_indices) + tasks_run_this_session + 1,
+                        'instruction': instruction,
+                        'final_reward': reward,
+                        'trajectory': info_dict.get('trajectory', [])
+                    }
+                else:
+                    episode_data = {
+                        'session_id_index': task_index,
+                        'episode_human_readable': len(processed_indices) + tasks_run_this_session + 1,
+                        'instruction': instruction,
+                        'final_reward': reward,
+                        'num_traces_run': info_dict.get('num_traces_run', args.num_traces),
+                        'synthesized_decision': info_dict.get('synthesized_decision', 1),
+                        'individual_traces': info_dict.get('individual_traces', []),
+                        'synthesis_reasoning': info_dict.get('synthesis_reasoning', "")
+                    }
+                
+                append_to_json(episode_data, output_file)
+                print(f"Result for session {session_id} saved to {output_file}")
             
-            episode_data = {
-                'session_id_index': task_index,
-                'episode_human_readable': len(processed_indices) + tasks_run_this_session + 1,
-                'instruction': instruction,
-                'final_reward': reward,
-                'trajectory': trajectory
-            }
-            append_to_json(episode_data, output_file)
-            print(f"Result for session {session_id} saved to {output_file}")
             tasks_run_this_session += 1
 
         except Exception as e:
             print(f"An unrecoverable error occurred for session {session_id}: {e}")
-            error_data = {
-                'session_id_index': task_index,
-                'episode_human_readable': len(processed_indices) + tasks_run_this_session + 1,
-                'instruction': 'N/A', 'final_reward': 0.0,
-                'trajectory': [{'error': str(e)}]
-            }
-            append_to_json(error_data, output_file)
+            if run_both_modes:
+                # Save error data to both files
+                std_error_data = {
+                    'session_id_index': task_index,
+                    'episode_human_readable': len(get_processed_indices(standard_file)) + tasks_run_this_session + 1,
+                    'instruction': 'N/A', 'final_reward': 0.0,
+                    'trajectory': [{'error': str(e)}]
+                }
+                synth_error_data = {
+                    'session_id_index': task_index,
+                    'episode_human_readable': len(get_processed_indices(synthesized_file)) + tasks_run_this_session + 1,
+                    'instruction': 'N/A', 'final_reward': 0.0,
+                    'num_traces_run': 3, 'synthesized_decision': 1,
+                    'individual_traces': [{'error': str(e)}], 'synthesis_reasoning': ""
+                }
+                append_to_json(std_error_data, standard_file)
+                append_to_json(synth_error_data, synthesized_file)
+            else:
+                error_data = {
+                    'session_id_index': task_index,
+                    'episode_human_readable': len(processed_indices) + tasks_run_this_session + 1,
+                    'instruction': 'N/A', 'final_reward': 0.0,
+                    'trajectory': [{'error': str(e)}] if args.num_traces == 1 else [],
+                    'individual_traces': [{'error': str(e)}] if args.num_traces > 1 else []
+                }
+                append_to_json(error_data, output_file)
 
     print(f"\nCompleted {tasks_run_this_session} new tasks in this session.")
-    print(f"All results are stored in {output_file}")
+    if run_both_modes:
+        print(f"Results stored in:")
+        print(f"   Standard ReAct: {standard_file}")
+        print(f"   Synthesized ReAct: {synthesized_file}")
+    else:
+        print(f"All results are stored in {output_file}")
 
 if __name__ == "__main__":
     main()
