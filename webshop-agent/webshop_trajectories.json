@@ -2,43 +2,61 @@
   {
     "session_id_index": 106,
     "episode_human_readable": 1,
-    "instruction": "i am looking for x-large, red color women faux fur lined winter warm jacket coat, and price lower than 70.00 dollars \n[Search]",
-    "final_reward": 1.0,
+    "instruction": "i am looking for x-large, red color women faux fur lined winter warm jacket coat, and price lower than 90.00 dollars \n[Search]",
+    "final_reward": 0.0,
     "trajectory": [
       {
         "step": 0,
         "action": "reset",
-        "observation": "WebShop \nInstruction:  \ni am looking for x-large, red color women faux fur lined winter warm jacket coat, and price lower than 70.00 dollars \n[Search]"
+        "observation": "WebShop \nInstruction:  \ni am looking for x-large, red color women faux fur lined winter warm jacket coat, and price lower than 90.00 dollars \n[Search]"
       },
       {
         "step": 1,
         "action": "search[x-large red women faux fur lined winter warm jacket coat]",
         "observation": "[Back to Search] \nPage 1 (Total results: 50) \n[Next >] \n[B09KP78G37] \nWomen Faux Fur Lined Jacket Coat Winter Warm Thick Fleece Outwear Trench Zipper Plus Size Long Sleeve Plush Overcoat \n$47.41 to $59.07 \n[B07ZXBGDXF] \nWomen's Coat, FORUU Winter Faux Fur Fleece Outwear Warm Lapel Biker Motor Aviator Jacket \n$21.49 to $24.99 \n[B09MSZ4VS8] \nGoldweather Women Winter Leggings Printed Warm Fleece Lined Yoga Pants Trousers Thermal High Waist Thicken Cashmere Tights (Navy, L) \n$20.99"
+      }
+    ]
+  },
+  {
+    "session_id_index": 239,
+    "episode_human_readable": 3,
+    "instruction": "place order for a pack of 12 blue diamond almonds that is gluten free and has the pecan flavor, and price lower than 60.00 dollars \n[Search]",
+    "final_reward": 1.0,
+    "trajectory": [
+      {
+        "step": 0,
+        "action": "reset",
+        "observation": "WebShop \nInstruction:  \nplace order for a pack of 12 blue diamond almonds that is gluten free and has the pecan flavor, and price lower than 60.00 dollars \n[Search]"
+      },
+      {
+        "step": 1,
+        "action": "search[pack of 12 blue diamond almonds gluten free pecan flavor]",
+        "observation": "[Back to Search] \nPage 1 (Total results: 50) \n[Next >] \n[B003I567W4] \nBlue Diamond Almonds Nut Thins Gluten Free Cracker Crisps, Hint of Sea Salt, 4.25 Oz Boxes (Pack of 12) \n$34.44 \n[B09DBYG4XD] \nItalian Herb Nuts - Vegan, Kosher, Gluten-free, GMO-free - 12oz (PACK OF 3 BAGS), Satisfaction Guarantee \n$17.95 \n[B07HYF111T] \nKETO BARS : The Original High Fat, Low Carb, Ketogenic Bar. Gluten Free, Vegan, Homemade with simple ingredients. [Chocolate Peanut Butter, 10 Pack] \n$29.95"
       },
       {
         "step": 2,
-        "action": "think[The user is looking for a jacket. The first result [B09KP78G37] is a Women Faux Fur Lined Jacket Coat Winter Warm Thick Fleece Outwear Trench Zipper Plus Size Long Sleeve Plush Overcoat. The price range is $47.41 to $59.07, which is lower than $70.00. The description mentions \"Plus Size\", which might include X-large. The color red is not explicitly mentioned in the title, but it is a possibility. The second result [B07ZXBGDXF] is also a women's jacket with faux fur lining, and the price is within the budget. The third result [B09MSZ4VS8] is leggings, not a jacket, so it should be ignored. I will investigate the first result further.]",
+        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $60.00.",
         "observation": "OK."
       },
       {
         "step": 3,
-        "action": "click[B09KP78G37]",
-        "observation": "[Back to Search] \n[< Prev] \ncolor [black][navy][red][yellow]\nsize [small][medium][large][x-large][xx-large][3x-large]\nWomen Faux Fur Lined Jacket Coat Winter Warm Thick Fleece Outwear Trench Zipper Plus Size Long Sleeve Plush Overcoat \nPrice: $47.41 to $59.07 \nRating: N.A. \n[Description] \n[Features] \n[Reviews] \n[Attributes] \n[Buy Now]"
+        "action": "click[B003I567W4]",
+        "observation": "[Back to Search] \n[< Prev] \nflavor name [country ranch][multi-seeds][original almond][pepper jack][sea salt][sesame seeds][smokehouse][cheddar][pecan][flax seeds][honey cinnamon]\nsize [4.25 ounce (pack of 1)][4.25 ounce (pack of 2)][4.25 ounce (pack of 6)][4.25 ounce (pack of 12)][7.7 ounce (pack of 1)]\nBlue Diamond Almonds Nut Thins Gluten Free Cracker Crisps, Hint of Sea Salt, 4.25 Oz Boxes (Pack of 12) \nPrice: $34.44 \nRating: N.A. \n[Description] \n[Features] \n[Reviews] \n[Attributes] \n[Buy Now]"
       },
       {
         "step": 4,
-        "action": "think[The user is looking for an x-large, red jacket. The product page shows that 'red' is available as a color option and 'x-large' is available as a size option. The price range is also within the user's budget. Therefore, I should select 'red' and 'x-large' and then proceed to buy.]",
+        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $60.00.",
         "observation": "OK."
       },
       {
         "step": 5,
-        "action": "click[red]",
-        "observation": "You have clicked red."
+        "action": "click[pecan]",
+        "observation": "You have clicked pecan."
       },
       {
         "step": 6,
-        "action": "click[x-large]",
-        "observation": "You have clicked x-large."
+        "action": "click[4.25 ounce (pack of 12)]",
+        "observation": "You have clicked 4.25 ounce (pack of 12)."
       },
       {
         "step": 7,
@@ -48,98 +66,15 @@
     ]
   },
   {
-    "session_id_index": 239,
-    "episode_human_readable": 2,
-    "instruction": "place order for a pack of 12 blue diamond almonds that is gluten free and has the pecan flavor, and price lower than 70.00 dollars \n[Search]",
-    "final_reward": 0.0,
-    "trajectory": [
-      {
-        "step": 0,
-        "action": "reset",
-        "observation": "WebShop \nInstruction:  \nplace order for a pack of 12 blue diamond almonds that is gluten free and has the pecan flavor, and price lower than 70.00 dollars \n[Search]"
-      },
-      {
-        "step": 1,
-        "action": "search[pack of 12 blue diamond almonds gluten free pecan flavor]",
-        "observation": "[Back to Search] \nPage 1 (Total results: 50) \n[Next >] \n[B003I567W4] \nBlue Diamond Almonds Nut Thins Gluten Free Cracker Crisps, Hint of Sea Salt, 4.25 Oz Boxes (Pack of 12) \n$34.44 \n[B09DBYG4XD] \nItalian Herb Nuts - Vegan, Kosher, Gluten-free, GMO-free - 12oz (PACK OF 3 BAGS), Satisfaction Guarantee \n$17.95 \n[B07HYF111T] \nKETO BARS : The Original High Fat, Low Carb, Ketogenic Bar. Gluten Free, Vegan, Homemade with simple ingredients. [Chocolate Peanut Butter, 10 Pack] \n$29.95"
-      },
-      {
-        "step": 2,
-        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $70.00.",
-        "observation": "OK."
-      },
-      {
-        "step": 3,
-        "action": "search[blue diamond almonds pecan flavor gluten free pack of 12]",
-        "observation": "Invalid action!"
-      },
-      {
-        "step": 4,
-        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $70.00.",
-        "observation": "OK."
-      },
-      {
-        "step": 5,
-        "action": "search[blue diamond almonds pecan flavor gluten free]",
-        "observation": "Invalid action!"
-      },
-      {
-        "step": 6,
-        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $70.00.",
-        "observation": "OK."
-      },
-      {
-        "step": 7,
-        "action": "search[blue diamond almonds pecan flavor gluten free pack of 12]",
-        "observation": "Invalid action!"
-      },
-      {
-        "step": 8,
-        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $70.00.",
-        "observation": "OK."
-      },
-      {
-        "step": 9,
-        "action": "search[blue diamond almonds pecan flavor gluten free]",
-        "observation": "Invalid action!"
-      },
-      {
-        "step": 10,
-        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $70.00.",
-        "observation": "OK."
-      },
-      {
-        "step": 11,
-        "action": "search[blue diamond almonds pecan flavor gluten free pack of 12]",
-        "observation": "Invalid action!"
-      },
-      {
-        "step": 12,
-        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $70.00.",
-        "observation": "OK."
-      },
-      {
-        "step": 13,
-        "action": "search[blue diamond almonds pecan flavor gluten free]",
-        "observation": "Invalid action!"
-      },
-      {
-        "step": 14,
-        "action": "think[The user wants to order a pack of 12 blue diamond almonds that are gluten-free and have a pecan flavor, with a price lower than $70.00.",
-        "observation": "OK."
-      }
-    ]
-  },
-  {
     "session_id_index": 37,
-    "episode_human_readable": 4,
-    "instruction": "show me an one organic hair growth serum roller set for all hair types, and price lower than 60.00 dollars \n[Search]",
+    "episode_human_readable": 5,
+    "instruction": "show me an one organic hair growth serum roller set for all hair types, and price lower than 40.00 dollars \n[Search]",
     "final_reward": 1.0,
     "trajectory": [
       {
         "step": 0,
         "action": "reset",
-        "observation": "WebShop \nInstruction:  \nshow me an one organic hair growth serum roller set for all hair types, and price lower than 60.00 dollars \n[Search]"
+        "observation": "WebShop \nInstruction:  \nshow me an one organic hair growth serum roller set for all hair types, and price lower than 40.00 dollars \n[Search]"
       },
       {
         "step": 1,
@@ -148,12 +83,12 @@
       },
       {
         "step": 2,
-        "action": "think[The user is looking for an \"organic hair growth serum roller set for all hair types\" and the price should be lower than $60.00.",
+        "action": "think[The user is looking for an \"organic hair growth serum roller set for all hair types\" and the price should be lower than $40.00.",
         "observation": "OK."
       },
       {
         "step": 3,
-        "action": "think[The first search result [B09PY89B1S] is an \"Upgraded Version Regrowth Organic Hair Serum Roller Set\" for \"Men Women of All Hair Types\" and costs $21.99, which is lower than $60.00. This matches all the user's criteria. The other results are either not roller sets or are too expensive. Therefore, I should select this item.]",
+        "action": "think[The first search result [B09PY89B1S] is an \"Upgraded Version Regrowth Organic Hair Serum Roller Set\" for \"Men Women of All Hair Types\" and costs $21.99, which is lower than $40.00. This matches all the user's criteria. The other two results are not roller sets or do not fit the description. Therefore, I should select the first result.]",
         "observation": "OK."
       },
       {
@@ -163,7 +98,7 @@
       },
       {
         "step": 5,
-        "action": "think[The user wants \"one\" roller set. The current product is available in different quantities: 1pcs, 3pcs, and 5pcs. Since the user asked for \"one\" set, I should select the 1pcs option. The price of $21.99 is within the budget of $60.00.]",
+        "action": "think[The user wants an \"one organic hair growth serum roller set\". The current product is a \"5PCS\" set. I need to check if there is an option for \"1pcs\". If there is, I should select it. If not, I should inform the user about the available options.]",
         "observation": "OK."
       },
       {
@@ -173,6 +108,11 @@
       },
       {
         "step": 7,
+        "action": "think[The user asked for \"one organic hair growth serum roller set\". I have selected the \"1pcs\" option for the product [B09PY89B1S]. The price is $21.99, which is lower than $40.00. The product is an organic hair growth serum roller set for all hair types. All criteria are met. I should now proceed to buy the item.]",
+        "observation": "OK."
+      },
+      {
+        "step": 8,
         "action": "click[Buy Now]",
         "observation": "Your score (min 0.0, max 1.0): 1.0"
       }
@@ -180,7 +120,7 @@
   },
   {
     "session_id_index": 89,
-    "episode_human_readable": 6,
+    "episode_human_readable": 7,
     "instruction": "i am looking fresh scent body lotion for dry skin, and price lower than 30.00 dollars \n[Search]",
     "final_reward": 0.0,
     "trajectory": [
@@ -258,6 +198,193 @@
         "step": 14,
         "action": "search[fresh body lotion]",
         "observation": "Invalid action!"
+      }
+    ]
+  },
+  {
+    "session_id_index": 32,
+    "episode_human_readable": 9,
+    "instruction": "i am looking for x-large, red color women faux fur lined winter warm jacket coat, and price lower than 90.00 dollars \n[Search]",
+    "final_reward": 1.0,
+    "trajectory": [
+      {
+        "step": 0,
+        "action": "reset",
+        "observation": "WebShop \nInstruction:  \ni am looking for x-large, red color women faux fur lined winter warm jacket coat, and price lower than 90.00 dollars \n[Search]"
+      },
+      {
+        "step": 1,
+        "action": "search[x-large red women faux fur lined winter warm jacket coat]",
+        "observation": "[Back to Search] \nPage 1 (Total results: 50) \n[Next >] \n[B09KP78G37] \nWomen Faux Fur Lined Jacket Coat Winter Warm Thick Fleece Outwear Trench Zipper Plus Size Long Sleeve Plush Overcoat \n$47.41 to $59.07 \n[B07ZXBGDXF] \nWomen's Coat, FORUU Winter Faux Fur Fleece Outwear Warm Lapel Biker Motor Aviator Jacket \n$21.49 to $24.99 \n[B09MSZ4VS8] \nGoldweather Women Winter Leggings Printed Warm Fleece Lined Yoga Pants Trousers Thermal High Waist Thicken Cashmere Tights (Navy, L) \n$20.99"
+      },
+      {
+        "step": 2,
+        "action": "think[The first result is a women's jacket coat with faux fur lining. The price range is $47.41 to $59.07, which is lower than $90.00. The description does not specify the color or size. The second result is also a women's jacket coat with faux fur lining and is within the price range, but the color and size are not specified. The third result is leggings, not a jacket coat. I need to find a red jacket coat in x-large size. I will check the first result.]",
+        "observation": "OK."
+      },
+      {
+        "step": 3,
+        "action": "click[B09KP78G37]",
+        "observation": "[Back to Search] \n[< Prev] \ncolor [black][navy][red][yellow]\nsize [small][medium][large][x-large][xx-large][3x-large]\nWomen Faux Fur Lined Jacket Coat Winter Warm Thick Fleece Outwear Trench Zipper Plus Size Long Sleeve Plush Overcoat \nPrice: $47.41 to $59.07 \nRating: N.A. \n[Description] \n[Features] \n[Reviews] \n[Attributes] \n[Buy Now]"
+      },
+      {
+        "step": 4,
+        "action": "think[The user is looking for an x-large, red, women's faux fur lined winter warm jacket coat for less than $90.00. I have found a product that matches the description of a women's faux fur lined jacket coat. The available colors include red and the available sizes include x-large. The price range is $47.41 to $59.07, which is within the user's budget. I will select the red color and x-large size.]",
+        "observation": "OK."
+      },
+      {
+        "step": 5,
+        "action": "click[red]",
+        "observation": "You have clicked red."
+      },
+      {
+        "step": 6,
+        "action": "click[x-large]",
+        "observation": "You have clicked x-large."
+      },
+      {
+        "step": 7,
+        "action": "click[Buy Now]",
+        "observation": "Your score (min 0.0, max 1.0): 1.0"
+      }
+    ]
+  },
+  {
+    "session_id_index": 250,
+    "episode_human_readable": 11,
+    "instruction": "i am looking for x-large, red color women faux fur lined winter warm jacket coat, and price lower than 90.00 dollars \n[Search]",
+    "final_reward": 1.0,
+    "trajectory": [
+      {
+        "step": 0,
+        "action": "reset",
+        "observation": "WebShop \nInstruction:  \ni am looking for x-large, red color women faux fur lined winter warm jacket coat, and price lower than 90.00 dollars \n[Search]"
+      },
+      {
+        "step": 1,
+        "action": "search[x-large red women faux fur lined winter warm jacket coat]",
+        "observation": "[Back to Search] \nPage 1 (Total results: 50) \n[Next >] \n[B09KP78G37] \nWomen Faux Fur Lined Jacket Coat Winter Warm Thick Fleece Outwear Trench Zipper Plus Size Long Sleeve Plush Overcoat \n$47.41 to $59.07 \n[B07ZXBGDXF] \nWomen's Coat, FORUU Winter Faux Fur Fleece Outwear Warm Lapel Biker Motor Aviator Jacket \n$21.49 to $24.99 \n[B09MSZ4VS8] \nGoldweather Women Winter Leggings Printed Warm Fleece Lined Yoga Pants Trousers Thermal High Waist Thicken Cashmere Tights (Navy, L) \n$20.99"
+      },
+      {
+        "step": 2,
+        "action": "think[The first result is a women's jacket coat with faux fur lining. The price range is $47.41 to $59.07, which is lower than $90.00. The description does not specify the color or size. The second result is also a women's jacket coat with faux fur lining and is within the price range, but the color and size are not specified. The third result is leggings, not a jacket coat. I need to find a red jacket coat in x-large size. I will check the first result.]",
+        "observation": "OK."
+      },
+      {
+        "step": 3,
+        "action": "click[B09KP78G37]",
+        "observation": "[Back to Search] \n[< Prev] \ncolor [black][navy][red][yellow]\nsize [small][medium][large][x-large][xx-large][3x-large]\nWomen Faux Fur Lined Jacket Coat Winter Warm Thick Fleece Outwear Trench Zipper Plus Size Long Sleeve Plush Overcoat \nPrice: $47.41 to $59.07 \nRating: N.A. \n[Description] \n[Features] \n[Reviews] \n[Attributes] \n[Buy Now]"
+      },
+      {
+        "step": 4,
+        "action": "think[The user is looking for an x-large, red, women's faux fur lined winter warm jacket coat for less than $90.00. I have found a product that matches the description of a women's faux fur lined jacket coat. The available colors include red and the available sizes include x-large. The price range is $47.41 to $59.07, which is within the user's budget. I will select the red color and x-large size.]",
+        "observation": "OK."
+      },
+      {
+        "step": 5,
+        "action": "click[red]",
+        "observation": "You have clicked red."
+      },
+      {
+        "step": 6,
+        "action": "click[x-large]",
+        "observation": "You have clicked x-large."
+      },
+      {
+        "step": 7,
+        "action": "click[Buy Now]",
+        "observation": "Your score (min 0.0, max 1.0): 1.0"
+      }
+    ]
+  },
+  {
+    "session_id_index": 192,
+    "episode_human_readable": 13,
+    "instruction": "i am looking for a pair of men's size 10.5 black loafers with rubber soles, and price lower than 70.00 dollars \n[Search]",
+    "final_reward": 1.0,
+    "trajectory": [
+      {
+        "step": 0,
+        "action": "reset",
+        "observation": "WebShop \nInstruction:  \ni am looking for a pair of men's size 10.5 black loafers with rubber soles, and price lower than 70.00 dollars \n[Search]"
+      },
+      {
+        "step": 1,
+        "action": "search[men's size 10.5 black loafers rubber soles]",
+        "observation": "[Back to Search] \nPage 1 (Total results: 50) \n[Next >] \n[B082MT9162] \nGLOBALWIN Men's Casual Slip On Penny Loafers Lightweight Driving Shoes \n$29.99 to $49.99 \n[B07HP6LVRS] \nMCICI Mens Loafers Moccasin Driving Shoes Premium Genuine Leather Casual Slip On Flats Fashion Slipper Breathable Big Size \n$15.99 to $32.99 \n[B09F2MFG1Q] \nWomens Mens house slippers Memory Foam Garden Plush Lining Slip On Rubber sole Indoor Outdoor House Casual Shoes \uff08Black adult-10.5-11) \n$100.0"
+      },
+      {
+        "step": 2,
+        "action": "think[The user is looking for men's black loafers in size 10.5 with rubber soles and a price under $70.",
+        "observation": "OK."
+      },
+      {
+        "step": 3,
+        "action": "click[B082MT9162]",
+        "observation": "[Back to Search] \n[< Prev] \nsize [7][7.5][8][8.5][9][9.5][10][10.5][11][12][13]\ncolor [2005brown][2005grey][2005black]\nGLOBALWIN Men's Casual Slip On Penny Loafers Lightweight Driving Shoes \nPrice: $29.99 to $49.99 \nRating: N.A. \n[Description] \n[Features] \n[Reviews] \n[Attributes] \n[Buy Now]"
+      },
+      {
+        "step": 4,
+        "action": "think[The user is looking for men's black loafers in size 10.5 with rubber soles and a price under $70.",
+        "observation": "OK."
+      },
+      {
+        "step": 5,
+        "action": "click[10.5]",
+        "observation": "You have clicked 10.5."
+      },
+      {
+        "step": 6,
+        "action": "click[2005black]",
+        "observation": "You have clicked 2005black."
+      },
+      {
+        "step": 7,
+        "action": "click[Buy Now]",
+        "observation": "Your score (min 0.0, max 1.0): 1.0"
+      }
+    ]
+  },
+  {
+    "session_id_index": 120,
+    "episode_human_readable": 15,
+    "instruction": "i want a pink niuta 2 pack hair towel wrap for dry hair, and price lower than 30.00 dollars \n[Search]",
+    "final_reward": 0.6666666666666666,
+    "trajectory": [
+      {
+        "step": 0,
+        "action": "reset",
+        "observation": "WebShop \nInstruction:  \ni want a pink niuta 2 pack hair towel wrap for dry hair, and price lower than 30.00 dollars \n[Search]"
+      },
+      {
+        "step": 1,
+        "action": "search[pink niuta 2 pack hair towel wrap dry hair]",
+        "observation": "[Back to Search] \nPage 1 (Total results: 50) \n[Next >] \n[B08G14B779] \nNIUTA 2 Pack Hair Towel Wrap, Microfiber Quick Drying Hair Towels, Super Absorbent Quick Dry Hair Towel, Wrapped Bath Cap (Pink+Light Blue) \n$4.99 \n[B098824K9T] \nSpa Savvy Shower Cap and Twist Hair Turban Duo, Enhance Your Shower Experience with this Complete Set, Fully Lined Shower Cap, Microfiber Turban (Green) \n$11.99 \n[B09DD2C1XD] \nBeaupretty 8pcs Kids Nightcaps Hair Bonnets Sleeping Caps Hair Protection Wide Rim Hat Bath Shower Accessories for Home \n$19.99"
+      },
+      {
+        "step": 2,
+        "action": "think[The first result B08G14B779 is a \"NIUTA 2 Pack Hair Towel Wrap\" in \"Pink+Light Blue\" for $4.99, which is lower than $30.00. This matches the user's request. I should select this item.]",
+        "observation": "OK."
+      },
+      {
+        "step": 3,
+        "action": "click[B08G14B779]",
+        "observation": "[Back to Search] \n[< Prev] \ncolor [pink][pink light blue][pink purple][pink rose]\nsize [26 inch x 10 inch][26 inch x 10 inch]\nNIUTA 2 Pack Hair Towel Wrap, Microfiber Quick Drying Hair Towels, Super Absorbent Quick Dry Hair Towel, Wrapped Bath Cap (Pink+Light Blue) \nPrice: $4.99 \nRating: N.A. \n[Description] \n[Features] \n[Reviews] \n[Attributes] \n[Buy Now]"
+      },
+      {
+        "step": 4,
+        "action": "think[The user wants a \"pink niuta 2 pack hair towel wrap for dry hair\". The current product is \"NIUTA 2 Pack Hair Towel Wrap\" and the available color option is \"pink light blue\". This matches the user's request. I should select the pink color option and then proceed to buy.]",
+        "observation": "OK."
+      },
+      {
+        "step": 5,
+        "action": "click[pink light blue]",
+        "observation": "You have clicked pink light blue."
+      },
+      {
+        "step": 6,
+        "action": "click[Buy Now]",
+        "observation": "Your score (min 0.0, max 1.0): 0.6666666666666666"
       }
     ]
   }

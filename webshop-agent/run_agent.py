@@ -506,7 +506,7 @@ def main():
         
         try:
             # Get instruction for this task
-            obs, info = webshop_text(session=session_id, page_type='init')
+            obs, info = webshop_text(session=task_index, page_type='init')
             if 'error' in info:
                 raise requests.exceptions.RequestException(obs)
             
